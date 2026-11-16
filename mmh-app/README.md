@@ -28,17 +28,29 @@ npm run build
 npm start
 ```
 
-## AP3 – Arbeitsstand 11.11.2026
+## AP3 – fortgeführter Arbeitsstand 16.11.2026
 
 AP3 besitzt eine erste unabhängige TypeScript-Regelbaseline mit einem
 versionierten AP1-Ausschnitt, expliziter Missingness, Kandidaten, Memo-Fundstellen,
 Kontextprüfung und Abstain-Diagnosen. Rohscores sind **keine Wahrscheinlichkeiten**.
-Kalibrierung und endgültige Klassenauflösung sind noch offen.
+Kalibrierung und endgültige Klassenauflösung sind noch offen. Der nächste
+Entwicklungsschritt ergänzt individuelle Evidenzrevisionen, KI-Replay und eine
+erste Referenzauswertung.
 
-Die Auswertung bietet zwei studienweite Downloads:
+Nach Aktualisierung einer vorhandenen Installation zuerst `npm run db:push`
+ausführen: Die neue Tabelle `observation_evidence` speichert Ergänzungen separat
+von den ursprünglichen Beobachtungen und Rundgangsnotizen.
+
+Über **Auswertung → Individuelle Evidenz erfassen** lassen sich Merkmale,
+Missingness, Qualität, Prozessschritt und Textmemo je Beobachtung nacherfassen.
+Jede Speicherung erzeugt eine neue Revision; veraltete Browserstände werden
+abgewiesen. Der Export übernimmt jeweils die neueste Revision.
+
+Die Auswertung bietet folgende studienweite Downloads:
 
 - `GET /observations/annotation-export?studyId=…`: AP3-Eingaben als JSONL.
 - `GET /observations/annotation-export?studyId=…&mode=baseline`: Ergebnisse mit Audit-Daten.
+- `GET /observations/annotation-export?studyId=…&mode=bundle`: JSON-Paket mit Eingaben, Ergebnissen, Ontologie und Manifest-Prüfsummen.
 
 Die Diagrammfilter gelten für diese Downloads nicht. Alte Ablaufarten bleiben
 als Quelldaten erhalten; fehlende AP2-Merkmale werden nicht daraus abgeleitet.
@@ -51,11 +63,25 @@ Eine technische Demonstration mit zehn ausdrücklich synthetischen Fällen:
 ```bash
 npm run --silent ap3:annotate -- tests/fixtures/ap3/observations.jsonl
 npm run --silent ap3:ai-request -- tests/fixtures/ap3/observations.jsonl
+npm run --silent ap3:evaluate -- tests/fixtures/ap3/observations.jsonl tests/fixtures/ap3/references.jsonl
 ```
 
 Die zweite Ausgabe enthält kontrollierte Modellanfragen als JSONL, führt aber
-keinen externen KI-Aufruf aus. Details, Grenzen und nächste Schritte stehen in
-[docs/AP3_Arbeitsstand_2026-11-11.md](docs/AP3_Arbeitsstand_2026-11-11.md).
+keinen externen KI-Aufruf aus. Vorliegende Antworten können reproduzierbar
+eingelesen werden:
+
+```bash
+npm run --silent ap3:annotate -- observations.jsonl --ai-responses responses.jsonl
+npm run --silent ap3:evaluate -- observations.jsonl references.jsonl --ai-responses responses.jsonl
+```
+
+Antworten benötigen Input- und Anfrage-Hash sowie Promptversion
+`memo-evidence/0.2.0`. Fehlende, doppelte, fremde oder unpassende Antworten lassen
+den Lauf fehlschlagen. Die Evaluation trennt synthetische Beispiele und
+geprüfte Realdaten. Rohscore-Rangfolgen sind diagnostische Baselines.
+
+Details und Grenzen: [aktueller Entwicklungsschritt](docs/AP3_Arbeitsstand_2026-11-16.md)
+und [Ausgangsstand vom 11.11.](docs/AP3_Arbeitsstand_2026-11-11.md).
 
 ## Prüfen
 

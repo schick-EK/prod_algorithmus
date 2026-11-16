@@ -1,9 +1,16 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { activityTypes, observations, roundNotes, studies } from "@/db/schema";
+import {
+  activityTypes,
+  observations,
+  observationEvidence,
+  roundNotes,
+  studies,
+} from "@/db/schema";
 import { adaptLegacyObservation } from "@/lib/annotation/legacy-adapter";
 import { annotate } from "@/lib/annotation/pipeline";
 import { ontology } from "@/lib/annotation/ontology";
+import { buildAnnotationBundle } from "@/lib/annotation/bundle";
 
 export const runtime = "nodejs";
 
@@ -12,35 +19,59 @@ export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
   const studyId = params.get("studyId");
   const mode = params.get("mode") ?? "input";
-  if (!studyId?.trim()) return Response.json({ error: "studyId required" }, { status: 400 });
-  if (mode !== "input" && mode !== "baseline") return Response.json({ error: "mode must be input or baseline" }, { status: 400 });
+  if (!studyId?.trim())
+    return Response.json({ error: "studyId required" }, { status: 400 });
+  if (!["input", "baseline", "bundle"].includes(mode))
+    return Response.json(
+      { error: "mode must be input, baseline or bundle" },
+      { status: 400 },
+    );
 
   // One SQLite read transaction keeps observations and note references consistent.
-  const inputs = db.transaction(tx => {
-    const study = tx.select({ id: studies.id }).from(studies).where(eq(studies.id, studyId)).get();
+  const inputs = db.transaction((tx) => {
+    const study = tx
+      .select({ id: studies.id })
+      .from(studies)
+      .where(eq(studies.id, studyId))
+      .get();
     if (!study) return null;
-    const rows = tx.select({
-      id: observations.id,
-      study_id: observations.study_id,
-      work_area_id: observations.work_area_id,
-      station_id: observations.station_id,
-      planned_round_id: observations.planned_round_id,
-      observed_at: observations.observed_at,
-      activity_type_id: observations.activity_type_id,
-      activity_label: activityTypes.label,
-      activity_gruppe: activityTypes.gruppe,
-    }).from(observations)
-      .innerJoin(activityTypes, eq(observations.activity_type_id, activityTypes.id))
+    const rows = tx
+      .select({
+        id: observations.id,
+        study_id: observations.study_id,
+        work_area_id: observations.work_area_id,
+        station_id: observations.station_id,
+        planned_round_id: observations.planned_round_id,
+        observed_at: observations.observed_at,
+        activity_type_id: observations.activity_type_id,
+        activity_label: activityTypes.label,
+        activity_gruppe: activityTypes.gruppe,
+      })
+      .from(observations)
+      .innerJoin(
+        activityTypes,
+        eq(observations.activity_type_id, activityTypes.id),
+      )
       .where(eq(observations.study_id, studyId))
-      .orderBy(observations.observed_at, observations.id).all();
-    const notes = tx.selectDistinct({
-      id: roundNotes.id,
-      planned_round_id: roundNotes.planned_round_id,
-      station_id: roundNotes.station_id,
-      note: roundNotes.note,
-    }).from(roundNotes)
-      .innerJoin(observations, and(eq(observations.planned_round_id, roundNotes.planned_round_id), eq(observations.station_id, roundNotes.station_id)))
-      .where(eq(observations.study_id, studyId)).all();
+      .orderBy(observations.observed_at, observations.id)
+      .all();
+    const notes = tx
+      .selectDistinct({
+        id: roundNotes.id,
+        planned_round_id: roundNotes.planned_round_id,
+        station_id: roundNotes.station_id,
+        note: roundNotes.note,
+      })
+      .from(roundNotes)
+      .innerJoin(
+        observations,
+        and(
+          eq(observations.planned_round_id, roundNotes.planned_round_id),
+          eq(observations.station_id, roundNotes.station_id),
+        ),
+      )
+      .where(eq(observations.study_id, studyId))
+      .all();
     const byScope = new Map<string, typeof notes>();
     for (const note of notes) {
       const key = JSON.stringify([note.planned_round_id, note.station_id]);
@@ -48,11 +79,45 @@ export async function GET(request: Request) {
       group.push(note);
       byScope.set(key, group);
     }
-    return rows.map(row => adaptLegacyObservation(row, byScope.get(JSON.stringify([row.planned_round_id, row.station_id])) ?? []));
+    const revisions = tx
+      .select({
+        observation_id: observationEvidence.observation_id,
+        input: observationEvidence.input,
+      })
+      .from(observationEvidence)
+      .innerJoin(
+        observations,
+        eq(observationEvidence.observation_id, observations.id),
+      )
+      .where(eq(observations.study_id, studyId))
+      .orderBy(desc(observationEvidence.revision))
+      .all();
+    const latest = new Map<string, (typeof revisions)[number]["input"]>();
+    for (const row of revisions)
+      if (!latest.has(row.observation_id))
+        latest.set(row.observation_id, row.input);
+    return rows.map(
+      (row) =>
+        latest.get(row.id) ??
+        adaptLegacyObservation(
+          row,
+          byScope.get(JSON.stringify([row.planned_round_id, row.station_id])) ??
+            [],
+        ),
+    );
   });
-  if (inputs === null) return Response.json({ error: "Study not found" }, { status: 404 });
-  const records = mode === "baseline" ? inputs.map(input => annotate(input)) : inputs;
-  const content = records.map(record => JSON.stringify(record)).join("\n");
+  if (inputs === null)
+    return Response.json({ error: "Study not found" }, { status: 404 });
+  if (mode === "bundle")
+    return Response.json(buildAnnotationBundle(inputs), {
+      headers: {
+        "Content-Disposition": 'attachment; filename="ap3-bundle.json"',
+        "Cache-Control": "no-store",
+      },
+    });
+  const records =
+    mode === "baseline" ? inputs.map((input) => annotate(input)) : inputs;
+  const content = records.map((record) => JSON.stringify(record)).join("\n");
   return new Response(content ? `${content}\n` : "", {
     headers: {
       "Content-Type": "application/x-ndjson; charset=utf-8",

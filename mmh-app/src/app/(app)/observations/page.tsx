@@ -41,7 +41,9 @@ export default async function ObservationsPage({
         <Breadcrumb items={[{ label: "Auswertung" }]} />
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Auswertung</h1>
         <div className="bg-white border border-gray-200 rounded-lg p-6 max-w-md">
-          <p className="text-gray-600 mb-4">Bitte wählen Sie eine Studie aus:</p>
+          <p className="text-gray-600 mb-4">
+            Bitte wählen Sie eine Studie aus:
+          </p>
           <div className="space-y-2">
             {userStudies.map((s) => (
               <Link
@@ -88,14 +90,14 @@ export default async function ObservationsPage({
         .where(
           and(
             eq(stations.work_area_id, workAreaId),
-            eq(stations.category, cat)
-          )
+            eq(stations.category, cat),
+          ),
         )
     : [];
 
   // Stations visible in picker (employee_count >= 3 for MA, all for Maschine)
   const pickerStations = stationList.filter((s) =>
-    cat === "Mitarbeiter" ? (s.employee_count ?? 0) >= 3 : true
+    cat === "Mitarbeiter" ? (s.employee_count ?? 0) >= 3 : true,
   );
 
   // Parse station filter
@@ -125,7 +127,10 @@ export default async function ObservationsPage({
       employee_count: stations.employee_count,
     })
     .from(observations)
-    .innerJoin(activityTypes, eq(observations.activity_type_id, activityTypes.id))
+    .innerJoin(
+      activityTypes,
+      eq(observations.activity_type_id, activityTypes.id),
+    )
     .leftJoin(stations, eq(observations.station_id, stations.id))
     .where(
       and(
@@ -135,7 +140,7 @@ export default async function ObservationsPage({
         ...(selectedStationIds.length > 0
           ? [inArray(observations.station_id, selectedStationIds)]
           : []),
-      )
+      ),
     );
 
   const obsData = await obsQuery;
@@ -177,7 +182,12 @@ export default async function ObservationsPage({
     inner.set(l, (inner.get(l) ?? 0) + 1);
   }
 
-  const donutData: { name: string; gruppe: string; value: number; label: string }[] = [];
+  const donutData: {
+    name: string;
+    gruppe: string;
+    value: number;
+    label: string;
+  }[] = [];
   for (const [gruppe, actMap] of gruppeMap.entries()) {
     for (const [label, value] of actMap.entries()) {
       donutData.push({ name: label, gruppe, value, label });
@@ -195,25 +205,28 @@ export default async function ObservationsPage({
         .where(
           and(
             eq(targetShares.work_area_id, workAreaId),
-            eq(targetShares.category, cat)
-          )
+            eq(targetShares.category, cat),
+          ),
         )
     : await db
         .select()
         .from(targetShares)
         .innerJoin(workAreas, eq(targetShares.work_area_id, workAreas.id))
         .where(
-          and(
-            eq(workAreas.study_id, studyId),
-            eq(targetShares.category, cat)
-          )
+          and(eq(workAreas.study_id, studyId), eq(targetShares.category, cat)),
         );
 
   // Average targets across work areas
   const targetMap = new Map<string, number[]>();
   for (const ts of tsQuery) {
-    const share = "share" in ts ? ts.share : (ts as { target_shares: { share: number } }).target_shares?.share;
-    const gruppe = "gruppe" in ts ? ts.gruppe : (ts as { target_shares: { gruppe: string } }).target_shares?.gruppe;
+    const share =
+      "share" in ts
+        ? ts.share
+        : (ts as { target_shares: { share: number } }).target_shares?.share;
+    const gruppe =
+      "gruppe" in ts
+        ? ts.gruppe
+        : (ts as { target_shares: { gruppe: string } }).target_shares?.gruppe;
     if (gruppe && share != null) {
       if (!targetMap.has(gruppe)) targetMap.set(gruppe, []);
       targetMap.get(gruppe)!.push((share as number) * 100);
@@ -250,7 +263,7 @@ export default async function ObservationsPage({
     sampleSizeResult = calculateSampleSize(
       avgHtTarget,
       study.confidence_level,
-      totalObs
+      totalObs,
     );
   }
 
@@ -267,7 +280,9 @@ export default async function ObservationsPage({
       studyId: studyIdStr,
       category: cat,
       ...(workAreaId ? { workAreaId } : {}),
-      ...(selectedStationIds.length ? { stationId: selectedStationIds.join(",") } : {}),
+      ...(selectedStationIds.length
+        ? { stationId: selectedStationIds.join(",") }
+        : {}),
       ...(selectedDays.length ? { days: selectedDays.join(",") } : {}),
     };
     const merged = { ...base, ...overrides };
@@ -292,18 +307,39 @@ export default async function ObservationsPage({
       </div>
 
       <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 text-sm">
-        <p className="font-medium text-gray-900">AP3 · experimenteller Arbeitsstand</p>
+        <p className="font-medium text-gray-900">
+          AP3 · experimenteller Arbeitsstand
+        </p>
         <p className="mt-1 text-gray-600">
-          Exportiert die gesamte Studie mit ursprünglichen Ablaufarten und Stationsnotizen.
-          Fehlende Beobachtungsmerkmale bleiben offen. Die Regelbaseline enthält sich;
+          Exportiert die gesamte Studie mit ursprünglichen Ablaufarten,
+          Stationsnotizen und individuell ergänzter Evidenz. Fehlende
+          Beobachtungsmerkmale bleiben offen. Die Regelbaseline enthält sich;
           kalibrierte Klassenwahrscheinlichkeiten liegen noch nicht vor.
         </p>
         <div className="mt-3 flex flex-wrap gap-4">
-          <a className="text-blue-600 hover:underline" href={`/observations/annotation-export?${new URLSearchParams({ studyId })}`}>
+          <Link
+            className="text-blue-600 hover:underline"
+            href={`/observations/evidence?${new URLSearchParams({ studyId })}`}
+          >
+            Individuelle Evidenz erfassen
+          </Link>
+          <a
+            className="text-blue-600 hover:underline"
+            href={`/observations/annotation-export?${new URLSearchParams({ studyId })}`}
+          >
             AP3-Eingaben (JSONL)
           </a>
-          <a className="text-blue-600 hover:underline" href={`/observations/annotation-export?${new URLSearchParams({ studyId, mode: "baseline" })}`}>
+          <a
+            className="text-blue-600 hover:underline"
+            href={`/observations/annotation-export?${new URLSearchParams({ studyId, mode: "baseline" })}`}
+          >
             Regelbaseline mit Diagnose (JSONL)
+          </a>
+          <a
+            className="text-blue-600 hover:underline"
+            href={`/observations/annotation-export?${new URLSearchParams({ studyId, mode: "bundle" })}`}
+          >
+            AP3-Paket mit Ontologie (JSON)
           </a>
         </div>
       </div>
@@ -313,7 +349,11 @@ export default async function ObservationsPage({
         {/* Study selector */}
         <div className="flex items-center gap-3 flex-wrap">
           <label className="text-sm font-medium text-gray-700">Studie:</label>
-          <form method="GET" action="/observations" className="flex items-center gap-2">
+          <form
+            method="GET"
+            action="/observations"
+            className="flex items-center gap-2"
+          >
             <input type="hidden" name="category" value={cat} />
             <select
               name="studyId"
@@ -326,7 +366,10 @@ export default async function ObservationsPage({
                 </option>
               ))}
             </select>
-            <button type="submit" className="px-2 py-1.5 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+            <button
+              type="submit"
+              className="px-2 py-1.5 text-xs text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+            >
               Wählen
             </button>
           </form>
@@ -334,7 +377,11 @@ export default async function ObservationsPage({
           {/* Category toggle */}
           <div className="flex gap-1 ml-4">
             <Link
-              href={buildUrl({ category: "Mitarbeiter", workAreaId: undefined, stationId: undefined })}
+              href={buildUrl({
+                category: "Mitarbeiter",
+                workAreaId: undefined,
+                stationId: undefined,
+              })}
               className={`px-3 py-1.5 rounded text-sm font-medium border transition-colors ${
                 cat === "Mitarbeiter"
                   ? "bg-blue-600 text-white border-blue-600"
@@ -344,7 +391,11 @@ export default async function ObservationsPage({
               Manuelle Arbeitsstationen
             </Link>
             <Link
-              href={buildUrl({ category: "Maschine", workAreaId: undefined, stationId: undefined })}
+              href={buildUrl({
+                category: "Maschine",
+                workAreaId: undefined,
+                stationId: undefined,
+              })}
               className={`px-3 py-1.5 rounded text-sm font-medium border transition-colors ${
                 cat === "Maschine"
                   ? "bg-blue-600 text-white border-blue-600"
@@ -358,7 +409,9 @@ export default async function ObservationsPage({
 
         {/* Work area filter */}
         <div className="flex items-center gap-3 flex-wrap">
-          <label className="text-sm font-medium text-gray-700">Produktionssystem:</label>
+          <label className="text-sm font-medium text-gray-700">
+            Produktionssystem:
+          </label>
           <Link
             href={buildUrl({ workAreaId: undefined, stationId: undefined })}
             className={`px-3 py-1 rounded text-sm border transition-colors ${
@@ -399,14 +452,15 @@ export default async function ObservationsPage({
                   <Link
                     key={s.id}
                     href={buildUrl({
-                      stationId: newIds.length > 0 ? newIds.join(",") : undefined,
+                      stationId:
+                        newIds.length > 0 ? newIds.join(",") : undefined,
                     })}
                     className={`px-2 py-1 rounded text-xs border transition-colors ${
                       selectedStationIds.includes(s.id)
                         ? "bg-blue-600 text-white border-blue-600"
                         : selectedStationIds.length === 0
-                        ? "bg-blue-100 text-blue-700 border-blue-300"
-                        : "text-gray-700 border-gray-300 hover:bg-gray-50"
+                          ? "bg-blue-100 text-blue-700 border-blue-300"
+                          : "text-gray-700 border-gray-300 hover:bg-gray-50"
                     }`}
                   >
                     {s.name}
@@ -419,7 +473,9 @@ export default async function ObservationsPage({
 
         {/* Day filter */}
         <div className="flex items-center gap-2 flex-wrap">
-          <label className="text-sm font-medium text-gray-700">Wochentage:</label>
+          <label className="text-sm font-medium text-gray-700">
+            Wochentage:
+          </label>
           {WEEKDAY_LABELS.map((label, i) => {
             const dayNum = i + 1;
             const isSelected = selectedDays.includes(dayNum);
@@ -436,8 +492,8 @@ export default async function ObservationsPage({
                   isSelected
                     ? "bg-blue-600 text-white border-blue-600"
                     : selectedDays.length === 0
-                    ? "bg-blue-50 text-blue-600 border-blue-200"
-                    : "text-gray-600 border-gray-300 hover:bg-gray-50"
+                      ? "bg-blue-50 text-blue-600 border-blue-200"
+                      : "text-gray-600 border-gray-300 hover:bg-gray-50"
                 }`}
               >
                 {label}
