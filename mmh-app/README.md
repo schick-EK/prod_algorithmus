@@ -1,76 +1,71 @@
 # MMH – Multimomentaufnahme App
 
-Eine Next.js 16-Webanwendung zur digitalen Durchführung von Multimomentaufnahmen (Work Sampling / MMH) nach arbeitswissenschaftlicher Methode.
+Lokaler Next.js-Prototyp zur Erfassung von Studien, Produktionssystemen,
+Stationen, Rundgängen, Ablaufarten und Stationsnotizen. Die aktuelle App nutzt
+SQLite (`local.db`) und hat keine Anmeldung. PostgreSQL und NextAuth sind trotz
+verbliebener Pakete derzeit nicht aktiv eingebunden.
 
-## Setup
+## Lokal starten
 
-### 1. Voraussetzungen
-
-- Node.js 18+
-- PostgreSQL-Datenbank
-
-### 2. Umgebungsvariablen konfigurieren
+Voraussetzung: Node.js **22 oder neuer**, npm und gegebenenfalls eine lokale
+C++-Build-Umgebung für `better-sqlite3`.
 
 ```bash
-cp .env.local.example .env.local
-```
-
-Dann `.env.local` bearbeiten:
-
-```
-DATABASE_URL=postgresql://postgres:password@localhost:5432/mmh
-AUTH_SECRET=<zufälliger-langer-string>
-NEXTAUTH_URL=http://localhost:3000
-```
-
-`AUTH_SECRET` erzeugen:
-```bash
-openssl rand -base64 32
-```
-
-### 3. Datenbank einrichten
-
-**Option A – Schema direkt pushen (Entwicklung):**
-```bash
+cd mmh-app
+npm ci
 npm run db:push
-```
-
-**Option B – Migrationen generieren und ausführen:**
-```bash
-npm run db:generate
-npm run db:migrate
-```
-
-### 4. App starten
-
-```bash
 npm run dev
 ```
 
-Öffnen Sie [http://localhost:3000](http://localhost:3000).
+Öffnen: <http://localhost:3000>. Für diesen Stand sind keine `.env`-Datei,
+PostgreSQL-Datenbank oder Zugangsdaten erforderlich. `db:push` richtet die
+Tabellen der lokalen Entwicklungsdatenbank ein; bestehende Datenbanken vorher
+sichern. Der Produktionsbuild setzt ebenfalls eine eingerichtete Datenbank
+voraus:
 
-## Verwendung
+```bash
+npm run build
+npm start
+```
 
-1. Konto registrieren unter `/auth/register`
-2. Studie anlegen unter `/studies/new`
-3. Produktionssysteme, Stationen, Schichten und Ablaufarten konfigurieren
-4. Sollwerte (HT/NT/VS/FK) für jede Kategorie festlegen
-5. Rundgänge starten und Beobachtungen erfassen
-6. Auswertung unter `/observations` mit Diagrammen und CSV-Export
+## AP3 – Arbeitsstand 11.11.2026
 
-## Technologien
+AP3 besitzt eine erste unabhängige TypeScript-Regelbaseline mit einem
+versionierten AP1-Ausschnitt, expliziter Missingness, Kandidaten, Memo-Fundstellen,
+Kontextprüfung und Abstain-Diagnosen. Rohscores sind **keine Wahrscheinlichkeiten**.
+Kalibrierung und endgültige Klassenauflösung sind noch offen.
 
-- **Next.js 16** (App Router, Server Components, Server Actions)
-- **TypeScript**
-- **Drizzle ORM** + PostgreSQL
-- **NextAuth.js v5** (JWT, bcrypt)
-- **Recharts** (Donut, Balken, Histogramm)
-- **Tailwind CSS**
+Die Auswertung bietet zwei studienweite Downloads:
 
-## Datenbankbefehle
+- `GET /observations/annotation-export?studyId=…`: AP3-Eingaben als JSONL.
+- `GET /observations/annotation-export?studyId=…&mode=baseline`: Ergebnisse mit Audit-Daten.
 
-| Befehl | Beschreibung |
-|--------|-------------|
-| `npm run db:push` | Schema direkt auf DB pushen |
-| `npm run db:generate` | Migrationsdateien generieren |
-| `npm run db:migrate` | Migrationen ausführen |
+Die Diagrammfilter gelten für diese Downloads nicht. Alte Ablaufarten bleiben
+als Quelldaten erhalten; fehlende AP2-Merkmale werden nicht daraus abgeleitet.
+Stationsnotizen werden nicht einzelnen gezählten Beobachtungen zugeordnet.
+Deshalb ergibt die Baseline für unveränderte Altdaten normalerweise
+`ABSTAIN_INSUFFICIENT_EVIDENCE`.
+
+Eine technische Demonstration mit zehn ausdrücklich synthetischen Fällen:
+
+```bash
+npm run --silent ap3:annotate -- tests/fixtures/ap3/observations.jsonl
+npm run --silent ap3:ai-request -- tests/fixtures/ap3/observations.jsonl
+```
+
+Die zweite Ausgabe enthält kontrollierte Modellanfragen als JSONL, führt aber
+keinen externen KI-Aufruf aus. Details, Grenzen und nächste Schritte stehen in
+[docs/AP3_Arbeitsstand_2026-11-11.md](docs/AP3_Arbeitsstand_2026-11-11.md).
+
+## Prüfen
+
+```bash
+npm run test:ap3
+npm run typecheck
+npm run lint
+npm run build
+```
+
+`db:generate` und `db:migrate` sind weiterhin vorhanden; im Repository liegen
+noch keine versionierten Migrationen. Für eine neue lokale Entwicklungsdatenbank
+ist daher aktuell `db:push` der nutzbare Weg.

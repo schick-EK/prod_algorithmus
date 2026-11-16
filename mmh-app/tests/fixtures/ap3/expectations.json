@@ -1,0 +1,89 @@
+{
+  "purpose": "Synthetic technical regression expectations, not empirical annotations or a calibration dataset.",
+  "cases": [
+    {
+      "observation_id": "SYN_001",
+      "status": "ABSTAIN_UNCALIBRATED",
+      "must_support": [
+        "PS_WAITING"
+      ],
+      "must_not_support": [
+        "PS_WAIT_MATERIAL"
+      ]
+    },
+    {
+      "observation_id": "SYN_002",
+      "status": "ABSTAIN_UNCALIBRATED",
+      "must_support": [
+        "PS_WAIT_MATERIAL"
+      ],
+      "must_not_support": []
+    },
+    {
+      "observation_id": "SYN_003",
+      "status": "ABSTAIN_MISSING_REQUIRED_CONTEXT",
+      "must_support": [
+        "PS_WAIT_MATERIAL"
+      ],
+      "must_not_support": []
+    },
+    {
+      "observation_id": "SYN_004",
+      "status": "ABSTAIN_CONFLICTING_EVIDENCE",
+      "must_support": [
+        "PS_WAIT_MATERIAL"
+      ],
+      "must_not_support": []
+    },
+    {
+      "observation_id": "SYN_005",
+      "status": "ABSTAIN_CONFLICTING_EVIDENCE",
+      "must_support": [
+        "PS_DISTURB_MACHINE"
+      ],
+      "must_not_support": []
+    },
+    {
+      "observation_id": "SYN_006",
+      "status": "ABSTAIN_INSUFFICIENT_EVIDENCE",
+      "must_support": [],
+      "must_not_support": []
+    },
+    {
+      "observation_id": "SYN_007",
+      "status": "ABSTAIN_UNCALIBRATED",
+      "must_support": [
+        "PS_WAIT_INFORMATION"
+      ],
+      "must_not_support": [
+        "PS_WAIT_MATERIAL"
+      ]
+    },
+    {
+      "observation_id": "SYN_008",
+      "status": "ABSTAIN_UNCALIBRATED",
+      "must_support": [
+        "PS_SEARCH_MATERIAL"
+      ],
+      "must_not_support": [
+        "PS_WAIT_MATERIAL"
+      ]
+    },
+    {
+      "observation_id": "SYN_009",
+      "status": "ABSTAIN_INSUFFICIENT_EVIDENCE",
+      "must_support": [
+        "PS_WAIT_MATERIAL"
+      ],
+      "must_not_support": []
+    },
+    {
+      "observation_id": "SYN_010",
+      "status": "ABSTAIN_INSUFFICIENT_EVIDENCE",
+      "must_support": [],
+      "must_not_support": [
+        "PS_WAIT_MATERIAL"
+      ]
+    }
+  ]
+}

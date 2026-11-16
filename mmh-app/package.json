@@ -7,6 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test:ap3": "tsx --test tests/annotation.test.ts",
+    "ap3:annotate": "tsx scripts/annotate.ts",
+    "ap3:ai-request": "tsx scripts/annotate.ts --ai-request",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx tsx src/db/migrate.ts",
     "db:push": "drizzle-kit push"

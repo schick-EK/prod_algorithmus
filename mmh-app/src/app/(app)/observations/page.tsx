@@ -291,6 +291,23 @@ export default async function ObservationsPage({
         </a>
       </div>
 
+      <div className="mb-6 rounded-lg border border-gray-200 bg-white p-4 text-sm">
+        <p className="font-medium text-gray-900">AP3 · experimenteller Arbeitsstand</p>
+        <p className="mt-1 text-gray-600">
+          Exportiert die gesamte Studie mit ursprünglichen Ablaufarten und Stationsnotizen.
+          Fehlende Beobachtungsmerkmale bleiben offen. Die Regelbaseline enthält sich;
+          kalibrierte Klassenwahrscheinlichkeiten liegen noch nicht vor.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-4">
+          <a className="text-blue-600 hover:underline" href={`/observations/annotation-export?${new URLSearchParams({ studyId })}`}>
+            AP3-Eingaben (JSONL)
+          </a>
+          <a className="text-blue-600 hover:underline" href={`/observations/annotation-export?${new URLSearchParams({ studyId, mode: "baseline" })}`}>
+            Regelbaseline mit Diagnose (JSONL)
+          </a>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6 space-y-4">
         {/* Study selector */}
