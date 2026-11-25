@@ -2,6 +2,7 @@ import {
   AnnotationResult,
   DecisionStatus,
   EvidenceContribution,
+  EvidenceMode,
   INPUT_SCHEMA_VERSION,
   PIPELINE_VERSION,
   RESULT_SCHEMA_VERSION,
@@ -62,7 +63,15 @@ function rawScore(evidence: EvidenceContribution[]): number {
 export function annotate(
   input: unknown,
   aiResponse?: unknown,
+  options: { mode?: EvidenceMode; observerHint?: boolean } = {},
 ): AnnotationResult {
+  const mode = options.mode ?? "combined";
+  if (!["combined", "observation_only", "memo_only"].includes(mode))
+    throw new Error("Unsupported evidence mode");
+  const configuration = {
+    mode,
+    observer_hint: mode === "combined" && (options.observerHint ?? true),
+  };
   const parsed = validateInput(input, ontology.version);
   const errors = [...parsed.errors];
   const v = parsed.value;
@@ -71,10 +80,10 @@ export function annotate(
     "CALIBRATION_UNCERTAINTY",
   ]);
   const ruleResult = v
-    ? evaluateRules(v)
-    : { evidence: [], explicitConflict: false };
+    ? evaluateRules(v, mode)
+    : { evidence: [], explicitConflict: false, conflicts: [] };
   const evidence = ruleResult.evidence;
-  if (v?.observer_hint) {
+  if (v?.observer_hint && configuration.observer_hint) {
     if (classesById.has(v.observer_hint.candidate_class_id)) {
       evidence.push({
         class_id: v.observer_hint.candidate_class_id,
@@ -111,6 +120,8 @@ export function annotate(
     aiResponse === undefined ? null : structuredClone(aiResponse);
   if (v && aiResponse !== undefined) {
     try {
+      if (mode !== "combined")
+        throw new Error("AI replay is disabled for channel ablations");
       const ai = validateAiResponse(aiResponse, v, ids);
       evidence.push(...ai.evidence);
       aiValid = true;
@@ -157,7 +168,7 @@ export function annotate(
       e.class_id !== "PS_UNKNOWN",
   );
   let status: DecisionStatus = "ABSTAIN_UNCALIBRATED";
-  if (!hasEvidence || codes.has("INPUT_LOW_QUALITY"))
+  if ((!hasEvidence && !conflict) || codes.has("INPUT_LOW_QUALITY"))
     status = "ABSTAIN_INSUFFICIENT_EVIDENCE";
   else if (conflict) status = "ABSTAIN_CONFLICTING_EVIDENCE";
   else if (missingContext) status = "ABSTAIN_MISSING_REQUIRED_CONTEXT";
@@ -175,7 +186,7 @@ export function annotate(
   const inputHash = digest(input ?? null);
   return {
     schema_version: RESULT_SCHEMA_VERSION,
-    annotation_id: `ANN_${digest({ inputHash, errors, versions, ontologyHash, aiResponse: attemptedAi }).slice(0, 32)}`,
+    annotation_id: `ANN_${digest({ inputHash, errors, versions, ontologyHash, configuration, aiResponse: attemptedAi }).slice(0, 32)}`,
     observation_id:
       v?.observation_id ??
       (input &&
@@ -196,6 +207,8 @@ export function annotate(
     },
     versions,
     audit: {
+      configuration,
+      channel_conflicts: ruleResult.conflicts,
       input: v,
       input_sha256: inputHash,
       ontology_sha256: ontologyHash,

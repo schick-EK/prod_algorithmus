@@ -12,6 +12,7 @@
     "ap3:annotate": "tsx scripts/annotate.ts",
     "ap3:ai-request": "tsx scripts/annotate.ts --ai-request",
     "ap3:evaluate": "tsx scripts/evaluate-annotations.ts",
+    "ap3:compare": "tsx scripts/compare-channels.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx tsx src/db/migrate.ts",
     "db:push": "drizzle-kit push"

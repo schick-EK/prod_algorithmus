@@ -28,7 +28,7 @@ npm run build
 npm start
 ```
 
-## AP3 – fortgeführter Arbeitsstand 16.11.2026
+## AP3 – fortgeführter Arbeitsstand 25.11.2026
 
 AP3 besitzt eine erste unabhängige TypeScript-Regelbaseline mit einem
 versionierten AP1-Ausschnitt, expliziter Missingness, Kandidaten, Memo-Fundstellen,
@@ -36,6 +36,18 @@ Kontextprüfung und Abstain-Diagnosen. Rohscores sind **keine Wahrscheinlichkeit
 Kalibrierung und endgültige Klassenauflösung sind noch offen. Der nächste
 Entwicklungsschritt ergänzt individuelle Evidenzrevisionen, KI-Replay und eine
 erste Referenzauswertung.
+
+Seit dem Stand vom 16.11. sind zusätzliche Memo-Regeln, bidirektionale
+Maschinenstatus-Konflikte mit Originalfundstellen und ein gepaarter
+Kanalvergleich hinzugekommen:
+
+```bash
+npm run --silent ap3:compare -- tests/fixtures/ap3/observations.jsonl tests/fixtures/ap3/references.jsonl
+```
+
+Der Bericht vergleicht strukturierte Beobachtung, individuelles Memo und ihre
+Kombination auf denselben Daten. ObserverHint und externe KI sind in diesem
+E1/E2-Vergleich ausgeschaltet. Die ursprünglichen Eingaben werden nicht verändert.
 
 Nach Aktualisierung einer vorhandenen Installation zuerst `npm run db:push`
 ausführen: Die neue Tabelle `observation_evidence` speichert Ergänzungen separat
@@ -80,7 +92,8 @@ Antworten benötigen Input- und Anfrage-Hash sowie Promptversion
 den Lauf fehlschlagen. Die Evaluation trennt synthetische Beispiele und
 geprüfte Realdaten. Rohscore-Rangfolgen sind diagnostische Baselines.
 
-Details und Grenzen: [aktueller Entwicklungsschritt](docs/AP3_Arbeitsstand_2026-11-16.md)
+Details und Grenzen: [aktueller Entwicklungsschritt](docs/AP3_Arbeitsstand_2026-11-25.md),
+[Stand vom 16.11.](docs/AP3_Arbeitsstand_2026-11-16.md)
 und [Ausgangsstand vom 11.11.](docs/AP3_Arbeitsstand_2026-11-11.md).
 
 ## Prüfen

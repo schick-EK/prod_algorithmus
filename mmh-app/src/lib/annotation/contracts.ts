@@ -1,8 +1,16 @@
 /** Experimental AP2/AP3 contract, deliberately distinct from the proposed v1.0. */
 export const INPUT_SCHEMA_VERSION = "ap3-input/0.1.0";
-export const PIPELINE_VERSION = "0.2.0";
-export const RESULT_SCHEMA_VERSION = "ap3-result/0.2.0";
-export const RULESET_VERSION = "0.1.0";
+export const PIPELINE_VERSION = "0.3.0";
+export const RESULT_SCHEMA_VERSION = "ap3-result/0.3.0";
+export const RULESET_VERSION = "0.2.0";
+
+export type EvidenceMode = "combined" | "observation_only" | "memo_only";
+export interface ChannelConflict {
+  feature: Feature;
+  observed_value: string;
+  memo_value: string;
+  span: { start: number; end: number; text: string };
+}
 
 export const FEATURE_VALUES = {
   machine_status: [
@@ -117,6 +125,8 @@ export interface AnnotationResult {
     ai_component: string;
   };
   audit: {
+    configuration: { mode: EvidenceMode; observer_hint: boolean };
+    channel_conflicts: ChannelConflict[];
     input: AnnotationInput | null;
     input_sha256: string;
     ontology_sha256: string;

@@ -182,6 +182,13 @@ export function evaluateAnnotations(
         definition.kind === "class_set"
           ? result.candidates.some((c) => matches(c.class_id))
           : null,
+      supported_candidate_hit:
+        definition.kind === "class_set"
+          ? result.candidates.some(
+              (c) => c.raw_score > 0 && matches(c.class_id),
+            )
+          : null,
+      candidate_count: result.candidates.length,
       raw_top1_hit:
         definition.kind === "class_set"
           ? ranked.slice(0, 1).some((c) => matches(c.class_id))
@@ -219,6 +226,13 @@ export function evaluateAnnotations(
         (c) => c.reference.kind === "out_of_scope",
       ).length,
       candidate_hit_rate: rate(selected.map((c) => c.candidate_hit)),
+      supported_candidate_hit_rate: rate(
+        selected.map((c) => c.supported_candidate_hit),
+      ),
+      mean_candidate_count: selected.length
+        ? selected.reduce((sum, c) => sum + c.candidate_count, 0) /
+          selected.length
+        : null,
       raw_score_top1_hit_rate: rate(selected.map((c) => c.raw_top1_hit)),
       raw_score_top3_hit_rate: rate(selected.map((c) => c.raw_top3_hit)),
       expected_abstain_match_rate: rate(selected.map((c) => c.abstain_match)),
@@ -239,8 +253,8 @@ export function evaluateAnnotations(
     annotations: digest(cases.map((c) => c.annotation_id)),
   };
   return {
-    schema_version: "ap3-evaluation/0.1.0",
-    report_id: `EVAL_${digest({ schema_version: "ap3-evaluation/0.1.0", fingerprints }).slice(0, 32)}`,
+    schema_version: "ap3-evaluation/0.2.0",
+    report_id: `EVAL_${digest({ schema_version: "ap3-evaluation/0.2.0", fingerprints }).slice(0, 32)}`,
     versions: { pipeline: PIPELINE_VERSION, ontology: ontology.version },
     fingerprints,
     by_reference_source: Object.fromEntries(
